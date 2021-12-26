@@ -9,24 +9,15 @@ import UIKit
 
 final class MainViewController: UIViewController {
     
-    var presenter: MainViewPresenterProtocol?
+    var presenter: MainViewPresenterProtocol!
     
-    private let greetingLabel: UILabel = {
-        let label = UILabel()
-        label.numberOfLines = 0
-        label.text = "Greeting label"
-        label.textAlignment = .center
-        label.font = .systemFont(ofSize: 18, weight: .bold)
-        return label
-    }()
-    
-    private let actionButton: UIButton = {
-        let button = UIButton()
-        button.setTitle("Button", for: .normal)
-        button.backgroundColor = .link
-        button.layer.cornerRadius = 8.0
-        button.addTarget(self, action: #selector(actionButtonTapped), for: .touchUpInside)
-        return button
+    private let tableView: UITableView = {
+        let table = UITableView()
+        table.showsVerticalScrollIndicator = false
+        table.separatorStyle = .singleLine
+        table.translatesAutoresizingMaskIntoConstraints = false
+        table.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        return table
     }()
     
     
@@ -35,39 +26,55 @@ final class MainViewController: UIViewController {
         super.viewDidLoad()
         
         view.backgroundColor = .systemBackground
-        view.addSubview(greetingLabel)
-        view.addSubview(actionButton)
+        
+        view.addSubview(tableView)
+        
+        tableView.delegate = self
+        tableView.dataSource = self
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        
-        greetingLabel.frame = CGRect(
-            x: 16,
-            y: (navigationController?.navigationBar.frame.height ?? 0) + 32,
-            width: view.width - 32,
-            height: 50
-        )
-        
-        let btnWidth = view.width / 2
-        actionButton.frame = CGRect(
-            x: (view.width - btnWidth) / 2,
-            y: greetingLabel.bottom + 16,
-            width:  btnWidth,
-            height: 44
-        )
+        tableView.frame = view.bounds
     }
     
     @objc private func actionButtonTapped() {
-        self.presenter?.showGreeting()
+//        self.presenter?.showGreeting()
     }
     
 }
 
-extension MainViewController: MainViewProtocol {
+// MARK: - UITableViewDataSource & UITableViewDelegate
+extension MainViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+
+        return presenter.comments?.count ?? 0
+    }
     
-    func setGreeting(greeting: String) {
-        self.greetingLabel.text = greeting
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
+        cell.selectionStyle = .none
+        guard let comments = presenter.comments?[indexPath.item] else { return cell }
+        cell.textLabel?.text = "\(comments.body)"
+        return cell
+    }
+}
+
+extension MainViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        guard let comment = presenter?.comments?[indexPath.item] else { return }
+        let detailView = ModuleBuilder.createDetailModule(comment: comment)
+        navigationController?.pushViewController(detailView, animated: true)
+    }
+}
+
+extension MainViewController: MainViewProtocol {
+    func success() {
+        tableView.reloadData()
+    }
+    
+    func failure(error: Error) {
+        print(error.localizedDescription)
     }
     
 }

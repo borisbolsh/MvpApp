@@ -18,8 +18,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         let window = UIWindow(windowScene: windowScene)
         
-        let mainModule = ModuleBuilder.createMainModule()
-        let navigationVC = UINavigationController(rootViewController: mainModule)
+        let navigationVC = UINavigationController()
+        let assemblyBuilder = AssemblyBuilder()
+        let router = Router(navigationController: navigationVC, assemblyBuilder: assemblyBuilder)
+            router.initialViewController()
         
         window.rootViewController = navigationVC
         window.makeKeyAndVisible()
